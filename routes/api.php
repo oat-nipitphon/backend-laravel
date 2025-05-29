@@ -61,8 +61,8 @@ Route::prefix('/')->group(function () {
 
     // ********** Posts ***************
     Route::get('/get_post_type', function () {
-        $postType = PostType::all();
-        return response()->json($postType, 200);
+        $postTypes = PostType::all();
+        return response()->json($postTypes, 200);
     });
     Route::apiResource('/posts', PostController::class);
     Route::post('/posts/store/{postID}', [PostController::class, 'postStore']);
@@ -115,7 +115,6 @@ Route::prefix('/')->group(function () {
 })->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    // return $request->user();
     try {
 
         $user_req = $request->user();

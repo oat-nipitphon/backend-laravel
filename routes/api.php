@@ -21,7 +21,7 @@ use App\Http\Controllers\AdminWalletController;
 
 use App\Models\UserStatus;
 use App\Models\PostType;
-use App\Models\RewardType;
+use App\Models\RewardStatus;
 use App\Models\User;
 
 /*
@@ -77,17 +77,10 @@ Route::prefix('/')->group(function () {
 
     // ********** Rewards *************
     Route::get('/get_reward_type', function () {
-        $rewardType = RewardType::all();
-        return response()->json($rewardType, 200);
+        $rewardStatus = RewardStatus::all();
+        return response()->json($rewardStatus, 200);
     });
     Route::apiResource('rewards', RewardController::class);
-    Route::prefix('/reward')->group(function () {
-        Route::get('/getRewards', [RewardController::class, 'index']);
-        Route::post('/newRewards', [RewardController::class, 'store']);
-        Route::get('/show/{id}', [RewardController::class, 'show']);
-        Route::put('/update/{id}', [RewardController::class, 'update']);
-        Route::delete('/delete/{id}', [RewardController::class, 'destroy']);
-    });
 
     // ********** Wallets *************
     Route::apiResource('wellets', WalletController::class);

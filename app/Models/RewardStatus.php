@@ -11,12 +11,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 
-class RewardType extends Model
+class RewardStatus extends Model
 {
 
     use HasFactory, HasApiTokens, Notifiable;
 
-    protected $table = 'reward_types';
+    protected $table = 'reward_status';
 
     protected $fillable = [
         'id',

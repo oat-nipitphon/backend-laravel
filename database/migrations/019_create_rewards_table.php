@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('rewards', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('type_id')->constrained('reward_types')->onDelete('cascade');
+            $table->foreignId('status_id')->constrained('reward_status')->onDelete('cascade');
             $table->string('name');
             $table->double('point');
             $table->float('amount')->nullable();
-            $table->enum('status', ['active', 'disable', 'comming_zone'])->default('active');
+            $table->binary('icon')->nullable();
             $table->timestamps();
         });
     }

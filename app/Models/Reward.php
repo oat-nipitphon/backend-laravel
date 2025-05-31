@@ -20,18 +20,17 @@ class Reward extends Model
 
     protected $fillable = [
         'id',
-        'type_id',
         'name',
         'point',
         'amount',
-        'status',
+        'status_id',
         'created_at',
         'updated_at'
     ];
 
 
     public function reward_status () : BelongsTo {
-        return $this->belongsTo(RewardType::class, 'type_id', 'id');
+        return $this->belongsTo(RewardStatus::class, 'status_id', 'id');
     }
 
 

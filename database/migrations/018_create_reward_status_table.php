@@ -29,7 +29,7 @@ return new class extends Migration
                 'name' => 'comming_soon'
             ],
             [
-                'id' => 2,
+                'id' => 3,
                 'name' => 'disabled'
             ],
         ]);

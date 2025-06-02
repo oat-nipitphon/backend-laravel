@@ -30,8 +30,8 @@ class Post extends Model
         'updated_at'
     ];
 
-    public function userProfiles () : BelongsTo {
-        return $this->belongsTo(UserProfile::class);
+    public function user_profiles () : BelongsTo {
+        return $this->belongsTo(UserProfile::class, 'profile_id', 'id');
     }
 
     public function post_type () : BelongsTo {

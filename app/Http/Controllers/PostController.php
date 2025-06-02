@@ -19,14 +19,6 @@ use App\Models\PostPop;
 class PostController extends Controller
 {
 
-
-    // Function format date time
-    private function dateTimeFormatTimeZone()
-    {
-        return Carbon::now('Asia/bangkok')->format('Y-m-d H:i:s');
-    }
-
-
     /**
      * Display a listing of the resource.
      */
@@ -36,33 +28,26 @@ class PostController extends Controller
 
             $posts = Post::with([
                 'post_type',
-                'post_image',
-                'post_pops',
-                'post_comments',
-                'post_office_files',
-                'post_videos',
-                'user_profile',
-                'user_profiles.users',
-                'user_profiles.profile_image',
-                'user_profiles.profile_pops',
-                'user_profiles.profile_followers'
+                'post_images',
+                'user_profiles',
+                'user_profiles.users'
             ])
+                ->where('status', 'active')
                 ->get()
                 ->map(function ($post) {
                     return $post;
                 });
 
 
-            if (!empty($posts)) {
+            if (empty($posts)) {
                 return response()->json([
-                    'message' => "laravel get posts success.",
-                    'posts' => $posts,
-                ], 200);
+                    'message' => "api controller post function index require false",
+                ], 404);
             }
-
             return response()->json([
-                'message' => "laravel get posts false",
-            ], 404);
+                'message' => "api controller post function index require success.",
+                'posts' => $posts,
+            ], 200);
         } catch (\Exception $error) {
 
             return response()->json([
@@ -79,7 +64,6 @@ class PostController extends Controller
     public function store(Request $request)
     {
         try {
-
             $validated = $request->validate([
                 'profileID' => 'required|integer',
                 'title' => 'required|string',
@@ -90,25 +74,20 @@ class PostController extends Controller
                 'imageFile' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
-            $typeID = $request->typeID;
-
-            if (!empty($request->newType)) {
-
+            $typeID = $validated['typeID'];
+            if (!empty($validated['newType'])) {
                 $postType = PostType::create([
-                    'name' => $request->newType,
+                    'name' => $validated['newType'],
                     'created_at' => now()
                 ]);
-
                 $typeID = $postType->id;
             }
 
             if (empty($typeID)) {
-
                 return response()->json([
-                    'message' => 'laravel create post type id false'
-                ], 404);
+                    'message' => 'Post type ID is missing.',
+                ], 422);
             }
-
 
             $post = Post::create([
                 'type_id' => $typeID,
@@ -116,62 +95,41 @@ class PostController extends Controller
                 'title' => $validated['title'],
                 'content' => $validated['content'],
                 'refer' => $validated['refer'],
-                'status' => "active",
+                'status' => 'active',
                 'created_at' => now(),
             ]);
 
-            if (!empty($post)) {
-
-                $postImage = new PostImage();
-                $postImage['post_id'] = $post->id;
-
-                if ($request->hasFile('imageFile')) {
-                    $imageFile = $request->file('imageFile');
-                    $imageData = file_get_contents($imageFile->getRealPath());
-                    $imageDataBase64 = base64_encode($imageData);
-                    $postImage['image_data'] = $imageDataBase64;
-                } else {
-                    $postImage['image_data'] = null;
-                }
-
-                $postImage['created_at'] = now();
-                $postImage->save();
-
-
-                $userProfile = UserProfile::findOrFail($validated['profileID']);
-
-                $userWallet = UserWallet::firstOrCreate(
-                    ['user_id' => $userProfile->user_id],
-                    [
-                        'point' => 0,
-                        'status' => 'active',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]
-                );
-
-                $userWallet->increment('point', 100);
-
+            if (empty($post)) {
                 return response()->json([
-                    'message' => 'laravel create post success',
-                    'post' => $post,
-                    'postImage' => $imageDataBase64,
-                    'userProfile' => $userProfile,
-                    'userWallet' => $userWallet
-                ], 201);
+                    'message' => "Post creation failed.",
+                ], 500);
+            }
+
+            if ($request->hasFile('imageFile')) {
+                $imageFile = $request->file('imageFile');
+                $imageData = file_get_contents($imageFile->getRealPath());
+                $imageDataBase64 = base64_encode($imageData);
+
+                PostImage::create([
+                    'post_id' => $post->id,
+                    'image_data' => $imageDataBase64,
+                    'created_at' => now(),
+                ]);
             }
 
             return response()->json([
-                'message' => "laravel create post false"
-            ], 404);
-        } catch (\Exception $error) {
+                'message' => 'Post created successfully.',
+                'post' => $post,
+            ], 201);
 
+        } catch (\Exception $error) {
             return response()->json([
-                'message' => "api post controller function store error",
-                'error' => $error->getMessage()
+                'message' => "An error occurred while creating the post.",
+                'error' => $error->getMessage(),
             ], 500);
         }
     }
+
 
     /**
      * Display the specified resource.
@@ -180,40 +138,28 @@ class PostController extends Controller
     {
         try {
 
-            $post = Post::findOrFail($id);
-            $post->with([
+            $posts = Post::with([
                 'post_type',
-                'post_image',
-                'post_pops',
-                'post_comments',
-                'post_office_files',
-                'post_videos',
-                'user_profile',
-                'user_profiles.users',
-                'user_profiles.profile_image',
-                'user_profiles.profile_pops',
-                'user_profiles.profile_followers'
+                'post_images',
+                'user_profiles',
+                'user_profiles.users'
             ])
-                ->get()
-                ->map(function ($row) {
-                    return $row;
-                });
+                ->where('status', 'active')
+                ->findOrFail($id);
 
-
-            if (!empty($post)) {
+            if (empty($posts)) {
                 return response()->json([
-                    'message' => "laravel get show post success.",
-                    'posts' => $post,
-                ], 200);
+                    'message' => "api controller post function show require false",
+                ], 404);
             }
-
             return response()->json([
-                'message' => "laravel get show post false",
-            ], 404);
+                'message' => "api controller post function show require success.",
+                'posts' => $posts,
+            ], 200);
         } catch (\Exception $error) {
 
             return response()->json([
-                'message' => "laravel get show post function  error",
+                'message' => "api controller post function show error",
                 'error' => $error->getMessage()
             ], 500);
         }
@@ -223,13 +169,18 @@ class PostController extends Controller
      * Update the specified resource in storage.
      * Function Update Post
      */
-    public function update(Request $request, string $postID)
+    public function update(Request $request, Post $post)
     {
-        try {
 
+
+        return response()->json([
+            'message' => 'api controller test function update',
+            'post' => $post
+        ], 200);
+
+ try {
             $validated = $request->validate([
                 'profileID' => 'required|integer',
-                'postID' => 'required|integer',
                 'title' => 'required|string',
                 'content' => 'required|string',
                 'refer' => 'nullable|string',
@@ -238,72 +189,62 @@ class PostController extends Controller
                 'imageFile' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
-            $typeID = $request->typeID;
+            // $post = Post::findOrFail($post->);
 
-            if (!empty($request->newType)) {
+            if (empty($post)) {
+                return response()->json([
+                    'message' => "Post creation failed.",
+                ], 404);
+            }
 
+            $typeID = $validated['typeID'];
+            if (!empty($validated['newType'])) {
                 $postType = PostType::create([
-                    'name' => $request->newType,
+                    'name' => $validated['newType'],
                     'created_at' => now()
                 ]);
-
                 $typeID = $postType->id;
             }
 
             if (empty($typeID)) {
-
                 return response()->json([
-                    'message' => 'laravel create post type id false'
+                    'message' => 'Post type ID is missing.',
                 ], 404);
             }
 
-            $post = Post::findOrFail($request->postID);
+            $post = Post::create([
+                'type_id' => $typeID,
+                'profile_id' => $validated['profileID'],
+                'title' => $validated['title'],
+                'content' => $validated['content'],
+                'refer' => $validated['refer'],
+                'status' => 'active',
+                'created_at' => now(),
+            ]);
 
-            if (!empty($post)) {
-                $post->update([
-                    'type_id' => $typeID,
-                    'title' => $validated['title'],
-                    'content' => $validated['content'],
-                    'refer' => $validated['refer'],
-                    'status' => "active",
-                    'deletetion' => "false",
-                    'updated_at' => now(),
+
+
+            if ($request->hasFile('imageFile')) {
+                $imageFile = $request->file('imageFile');
+                $imageData = file_get_contents($imageFile->getRealPath());
+                $imageDataBase64 = base64_encode($imageData);
+
+                PostImage::create([
+                    'post_id' => $post->id,
+                    'image_data' => $imageDataBase64,
+                    'created_at' => now(),
                 ]);
-
-                $postImage = PostImage::where('post_id', $post->id)->first();
-
-                if (!$request->hasFile('imageFile')) {
-                    $imageDataBase64 = null;
-                } else {
-                    $imageFile = $request->file('imageFile');
-                    $imageData = file_get_contents($imageFile->getRealPath());
-                    $imageDataBase64 = base64_encode($imageData);
-                }
-
-                $postImage->forstOrCreate([
-                    ['post_id' => $post->id],
-                    ['image_data' => $imageDataBase64],
-                    ['updated_at' => now()]
-                ]);
-
-                return response()->json([
-                    'message' => 'laravel update post success',
-                    'post' => $post,
-                    'imageDataBase64' => $imageDataBase64
-                ], 200);
             }
 
-
             return response()->json([
-                'message' => 'laravel update post where post id response false',
-                'postID' => $postID,
-                'reqPostID' => $request->postID
-            ], 404);
+                'message' => 'Post created successfully.',
+                'post' => $post,
+            ], 201);
+
         } catch (\Exception $error) {
-
             return response()->json([
-                'message' => "api post controller function show error",
-                'error' => $error->getMessage()
+                'message' => "An error occurred while creating the post.",
+                'error' => $error->getMessage(),
             ], 500);
         }
     }

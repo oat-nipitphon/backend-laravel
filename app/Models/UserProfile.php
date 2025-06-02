@@ -34,6 +34,10 @@ class UserProfile extends Model
         return $this->hasOne(User::class, 'user_id', 'id');
     }
 
+    public function users () : BelongsTo {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
     public function profile_image () : HasOne {
         return $this->hasOne(UserProfileImage::class, 'profile_id', 'id');
     }

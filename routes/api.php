@@ -103,8 +103,6 @@ Route::prefix('/')->group(function () {
         });
         Route::apiResource('/wallets', AdminWalletController::class);
     })->name('manager');
-
-
 })->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -122,7 +120,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
         $token = $users->createToken($users->username)->plainTextToken;
 
-        $users = [
+        $users =  [
             'id' => $users->id,
             'name' => $users->name,
             'email' => $users->email,
@@ -183,7 +181,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
         if (empty($users)) {
             return response()->json([
-                'message' => 'get user false'
+                'message' => 'get user false',
+                'users' => '',
+                'token' => ''
             ], 404);
         }
 
@@ -192,7 +192,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
             'users' => $users,
             'token' => $token
         ], 200);
-
     } catch (\Exception $e) {
         return response()->json([
             'message' => 'get user function error',

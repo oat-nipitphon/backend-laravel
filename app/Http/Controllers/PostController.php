@@ -39,15 +39,16 @@ class PostController extends Controller
                 });
 
 
-            if (empty($posts)) {
+            if (!$posts) {
                 return response()->json([
                     'message' => "api controller post function index require false",
-                ], 404);
+                ], 500);
             }
             return response()->json([
                 'message' => "api controller post function index require success.",
                 'posts' => $posts,
             ], 200);
+
         } catch (\Exception $error) {
 
             return response()->json([
@@ -63,65 +64,75 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
+
+
         try {
-            $validated = $request->validate([
-                'profileID' => 'required|integer',
+            $request->validate([
+                'profile_id' => 'required|integer',
+                'type_id' => 'nullable|integer',
+                'new_type' => 'nullable|string',
                 'title' => 'required|string',
                 'content' => 'required|string',
                 'refer' => 'nullable|string',
-                'typeID' => 'nullable|integer',
-                'newType' => 'nullable|string',
-                'imageFile' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
-            $typeID = $validated['typeID'];
-            if (!empty($validated['newType'])) {
-                $postType = PostType::create([
-                    'name' => $validated['newType'],
-                    'created_at' => now()
+            $type_id = $request->type_id;
+            if (!empty($request->new_type)) {
+                $post_type = PostType::create([
+                    'name' => $request->new_type,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
-                $typeID = $postType->id;
+                $type_id = $post_type->id;
             }
 
-            if (empty($typeID)) {
+            if (empty($type_id)) {
                 return response()->json([
                     'message' => 'Post type ID is missing.',
                 ], 422);
             }
 
             $post = Post::create([
-                'type_id' => $typeID,
-                'profile_id' => $validated['profileID'],
-                'title' => $validated['title'],
-                'content' => $validated['content'],
-                'refer' => $validated['refer'],
+                'type_id' => $type_id,
+                'profile_id' => $request->profile_id,
+                'title' => $request->title,
+                'content' => $request->content,
+                'refer' => $request->refer,
                 'status' => 'active',
                 'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
-            if (empty($post)) {
+            if (!$post) {
                 return response()->json([
                     'message' => "Post creation failed.",
                 ], 500);
             }
 
-            if ($request->hasFile('imageFile')) {
-                $imageFile = $request->file('imageFile');
-                $imageData = file_get_contents($imageFile->getRealPath());
-                $imageDataBase64 = base64_encode($imageData);
+            if ($request->hasFile('image_file')) {
+                $image_file = $request->file('image_file');
+                $image_data = file_get_contents($image_file->getRealPath());
+                $image_data_base64 = base64_encode($image_data);
 
-                PostImage::create([
+                $post_image = PostImage::create([
                     'post_id' => $post->id,
-                    'image_data' => $imageDataBase64,
+                    'image_data' => $image_data_base64,
                     'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
             }
 
-            return response()->json([
-                'message' => 'Post created successfully.',
-                'post' => $post,
-            ], 201);
 
+            if (!$post_image) {
+                return response()->json([
+                    'message' => 'post image require false'
+                ], 500);
+            }
+
+            return response()->json([
+                'message' => 'Post created successfully.'
+            ], 201);
         } catch (\Exception $error) {
             return response()->json([
                 'message' => "An error occurred while creating the post.",
@@ -169,16 +180,10 @@ class PostController extends Controller
      * Update the specified resource in storage.
      * Function Update Post
      */
-    public function update(Request $request, Post $post)
+    public function update(Request $request, string $id)
     {
 
-
-        return response()->json([
-            'message' => 'api controller test function update',
-            'post' => $post
-        ], 200);
-
- try {
+        try {
             $validated = $request->validate([
                 'profileID' => 'required|integer',
                 'title' => 'required|string',
@@ -189,11 +194,11 @@ class PostController extends Controller
                 'imageFile' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
-            // $post = Post::findOrFail($post->);
+            $post = Post::findOrFail($id);
 
             if (empty($post)) {
                 return response()->json([
-                    'message' => "Post creation failed.",
+                    'message' => "api controller function update where post id false.",
                 ], 404);
             }
 
@@ -208,43 +213,40 @@ class PostController extends Controller
 
             if (empty($typeID)) {
                 return response()->json([
-                    'message' => 'Post type ID is missing.',
+                    'message' => 'api controller function update type ID is missing.',
                 ], 404);
             }
 
-            $post = Post::create([
-                'type_id' => $typeID,
-                'profile_id' => $validated['profileID'],
-                'title' => $validated['title'],
-                'content' => $validated['content'],
-                'refer' => $validated['refer'],
-                'status' => 'active',
-                'created_at' => now(),
-            ]);
-
-
+            $post->updateOrCreate(
+                ['id' => $post->id],
+                [
+                    'type_id' => $typeID,
+                    'profile_id' => $validated['profileID'],
+                    'title' => $validated['title'],
+                    'content' => $validated['content'],
+                    'refer' => $validated['refer'],
+                    'status' => 'active',
+                    'updated_at' => now(),
+                ]
+            );
 
             if ($request->hasFile('imageFile')) {
                 $imageFile = $request->file('imageFile');
                 $imageData = file_get_contents($imageFile->getRealPath());
                 $imageDataBase64 = base64_encode($imageData);
-
-                PostImage::create([
-                    'post_id' => $post->id,
+                $post->post_images->update([
                     'image_data' => $imageDataBase64,
-                    'created_at' => now(),
-                ]);
+                    'updated_at' => now()
+                ], 201);
             }
 
             return response()->json([
-                'message' => 'Post created successfully.',
-                'post' => $post,
+                'message' => 'api controller function update successfully.',
             ], 201);
-
-        } catch (\Exception $error) {
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => "An error occurred while creating the post.",
-                'error' => $error->getMessage(),
+                'message' => "api controller function update post error",
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -258,18 +260,11 @@ class PostController extends Controller
 
             DB::beginTransaction();
 
-            Post::with([
-                'post_images',
-                'post_pops',
-                'post_comments',
-                'post_office_files',
-                'post_videos'
-            ])->findOrFail($id);
+            $post = Post::fineOrFail($id);
 
             if (empty($post)) {
                 return response()->json([
-                    'message' => 'laravel delete post where post id false',
-                    'postID' => $id
+                    'message' => 'api controller function destroy where post id false.',
                 ], 404);
             }
 
@@ -278,12 +273,12 @@ class PostController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => "laravel delete post success",
+                'message' => "api controller function destroy post successfully.",
             ], 200);
         } catch (\Exception $error) {
 
             return response()->json([
-                'message' => "laravel delete post function error",
+                'message' => "api controller function post error",
                 'error' => $error->getMessage()
             ], 500);
         }

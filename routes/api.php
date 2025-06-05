@@ -60,7 +60,7 @@ Route::prefix('/')->group(function () {
 
 
     // ********** Posts ***************
-    Route::get('/get_post_type', function () {
+    Route::get('/get_post_types', function () {
         $postTypes = PostType::all();
         return response()->json($postTypes, 200);
     });

@@ -20,8 +20,8 @@ class Post extends Model
 
     protected $fillable = [
         'id',
-        'type_id',
         'profile_id',
+        'type_id',
         'title',
         'content',
         'refer',

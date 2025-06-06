@@ -29,13 +29,55 @@ class PostController extends Controller
             $posts = Post::with([
                 'post_type',
                 'post_images',
-                'user_profiles',
-                'user_profiles.users'
+                'user_profiles.users.user_status'
             ])
                 ->where('status', 'active')
+                ->whereHas('user_profiles.users.user_status', function ($query) {
+                    $query->whereIn('name', ['admin', 'user']);
+                })
                 ->get()
                 ->map(function ($post) {
-                    return $post;
+                    return $post ? [
+                        'id' => $post->id,
+                        'title' => $post->title,
+                        'content' => $post->content,
+                        'refer' => $post->refer,
+                        'created_at' => $post->created_at,
+                        'updated_at' => $post->updated_at,
+
+                        'post_type_name' => $post->post_type->name,
+
+                        'post_images' => $post->post_images ? $post->post_images
+                            ->map(function ($image) {
+                                return [
+                                    'id' => $image->id,
+                                    'image_data' => $image->image_data,
+                                    'created_at' => $image->created_at,
+                                    'updated_at' => $image->updated_at,
+                                ];
+                            }) : null,
+
+                        'user_profile' => $post->user_profiles->id ?? null,
+                        'title_name' => $post->user_profiles->title_name ??  '-',
+                        'first_name' => $post->user_profiles->first_name ??  '-',
+                        'last_name' => $post->user_profiles->last_name ??  '-',
+                        'nick_name' => $post->user_profiles->nick_name ??  '-',
+                        'birth_day' => $post->user_profiles->birth_day ?? null,
+                        'created_at' => $post->user_profiles->created_at ?? null,
+                        'updated_at' => $post->user_profiles->updated_at ?? null,
+
+
+                        'id' => $post->user_profiles->users->id ?? null,
+                        'username' => $post->user_profiles->users->username ?? '-',
+                        'name' => $post->user_profiles->users->name ?? '-',
+                        'email' => $post->user_profiles->users->email ?? '-',
+                        'created_at' => $post->user_profiles->users->created_at ?? null,
+                        'updated_at' => $post->user_profiles->users->updated_at ?? null,
+
+                        'user_status_id' => $post->user_profiles->users->user_status->id ?? null,
+                        'user_status_name' => $post->user_profiles->users->user_status->name ?? '-',
+
+                    ] : null;
                 });
 
 

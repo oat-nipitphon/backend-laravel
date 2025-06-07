@@ -302,7 +302,7 @@ class PostController extends Controller
 
             DB::beginTransaction();
 
-            $post = Post::fineOrFail($id);
+            $post = Post::findOrFail($id);
 
             if (empty($post)) {
                 return response()->json([
@@ -317,6 +317,7 @@ class PostController extends Controller
             return response()->json([
                 'message' => "api controller function destroy post successfully.",
             ], 200);
+
         } catch (\Exception $error) {
 
             return response()->json([
